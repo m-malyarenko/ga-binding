@@ -41,36 +41,6 @@ impl PartialOrd for VarLifetime {
     }
 }
 
-pub struct VarLifetimeTable {
-    n_clk: u16,
-    vars_lt: Vec<VarLifetime>,
-}
-
-impl VarLifetimeTable {
-    pub fn new(
-        n_clk: u16,
-        vars_lt: Vec<VarLifetime>,
-    ) -> Result<VarLifetimeTable, error::VarLifetimeError> {
-        let mut valid_vars_lt = true;
-
-        for var_lt in &vars_lt {
-            if var_lt.t_use > n_clk {
-                eprintln!(
-                    "lifetime of {} out of bounds: max lifetime {}, varibale use time {}",
-                    var_lt.id, n_clk, var_lt.t_use
-                );
-                valid_vars_lt = false;
-            }
-        }
-
-        if valid_vars_lt {
-            Ok(VarLifetimeTable { n_clk, vars_lt })
-        } else {
-            Err(error::VarLifetimeError::LifetimeOutOfBounds)
-        }
-    }
-}
-
 pub mod error {
     use std::error::Error;
     use std::fmt;
@@ -80,7 +50,6 @@ pub mod error {
     #[derive(Debug)]
     pub enum VarLifetimeError {
         UseBeforeDef(VarLifetime),
-        LifetimeOutOfBounds,
     }
 
     impl fmt::Display for VarLifetimeError {
@@ -88,9 +57,6 @@ pub mod error {
             match self {
                 VarLifetimeError::UseBeforeDef(var_lt) => {
                     write!(f, "invalid lifetime: use before definition: {:?}", var_lt)
-                }
-                VarLifetimeError::LifetimeOutOfBounds => {
-                    write!(f, "variable lifetime of out of bounds")
                 }
             }
         }
