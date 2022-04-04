@@ -3,15 +3,15 @@ use std::cmp::Ordering;
 use error::VarLifetimeError;
 
 #[derive(Debug)]
-struct VarLifetime {
-    name: String,
-    t_def: usize,
-    t_use: usize,
+pub struct VarLifetime {
+    id: u16,
+    t_def: u16,
+    t_use: u16,
 }
 
 impl VarLifetime {
-    pub fn new(name: String, t_def: usize, t_use: usize) -> Result<VarLifetime, VarLifetimeError> {
-        let var_lt = VarLifetime { name, t_def, t_use };
+    pub fn new(id: u16, t_def: u16, t_use: u16) -> Result<VarLifetime, VarLifetimeError> {
+        let var_lt = VarLifetime { id, t_def, t_use };
 
         if t_def <= t_use {
             Ok(var_lt)
@@ -41,14 +41,14 @@ impl PartialOrd for VarLifetime {
     }
 }
 
-struct VarLifetimeTable {
-    n_clk: usize,
+pub struct VarLifetimeTable {
+    n_clk: u16,
     vars_lt: Vec<VarLifetime>,
 }
 
 impl VarLifetimeTable {
     pub fn new(
-        n_clk: usize,
+        n_clk: u16,
         vars_lt: Vec<VarLifetime>,
     ) -> Result<VarLifetimeTable, error::VarLifetimeError> {
         let mut valid_vars_lt = true;
@@ -57,7 +57,7 @@ impl VarLifetimeTable {
             if var_lt.t_use > n_clk {
                 eprintln!(
                     "lifetime of {} out of bounds: max lifetime {}, varibale use time {}",
-                    var_lt.name, n_clk, var_lt.t_use
+                    var_lt.id, n_clk, var_lt.t_use
                 );
                 valid_vars_lt = false;
             }
