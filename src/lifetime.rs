@@ -2,15 +2,17 @@ use std::cmp::Ordering;
 
 use error::VarLifetimeError;
 
-#[derive(Debug)]
+pub type VarLifetimeId = u16;
+
+#[derive(Clone, Copy, Debug)]
 pub struct VarLifetime {
-    id: u16,
+    pub id: VarLifetimeId,
     t_def: u16,
     t_use: u16,
 }
 
 impl VarLifetime {
-    pub fn new(id: u16, t_def: u16, t_use: u16) -> Result<VarLifetime, VarLifetimeError> {
+    pub fn new(id: VarLifetimeId, t_def: u16, t_use: u16) -> Result<VarLifetime, VarLifetimeError> {
         let var_lt = VarLifetime { id, t_def, t_use };
 
         if t_def <= t_use {
