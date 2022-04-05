@@ -27,7 +27,7 @@ impl VarLifetimeGraph {
                 let id = var_lt.id;
                 let adj_set: HashSet<VarLifetimeId> = vars_lt
                     .iter()
-                    .filter(|&v| *v != *var_lt && v.overlap(var_lt))
+                    .filter(|&v| v.id != var_lt.id && v.overlap(var_lt))
                     .map(|&v| v.id)
                     .collect();
                 let deg = adj_set.len() as u16;
