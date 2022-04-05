@@ -23,7 +23,7 @@ impl VarLifetime {
     }
 
     pub fn overlap(&self, other: &VarLifetime) -> bool {
-        self.t_def < other.t_use || self.t_use > other.t_def
+        !(self.t_use <= other.t_def || other.t_use <= self.t_def)
     }
 }
 
