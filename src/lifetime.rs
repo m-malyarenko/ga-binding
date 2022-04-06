@@ -35,6 +35,10 @@ impl PartialEq for VarLifetime {
 
 impl PartialOrd for VarLifetime {
     fn partial_cmp(&self, other: &VarLifetime) -> Option<Ordering> {
+        if self == other {
+            return Some(Ordering::Equal);
+        }
+
         if !self.overlap(other) {
             Some(self.t_use.cmp(&other.t_def))
         } else {
