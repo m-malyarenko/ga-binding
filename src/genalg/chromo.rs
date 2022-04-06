@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
@@ -7,14 +9,14 @@ use crate::lifetime::VarLifetimeId as Id;
 
 type Color = u16;
 
-pub struct Chromo<'a> {
+pub struct Chromo {
     gene: Vec<Id>,
     phene: Option<u16>,
-    graph: &'a Graph,
+    graph: Rc<Graph>,
     coloring: Option<Vec<(Id, Color)>>,
 }
 
-impl<'a> Chromo<'a> {
+impl Chromo {
     pub fn gene(&mut self) -> &[Id] {
         &self.gene
     }
@@ -61,7 +63,7 @@ impl<'a> Chromo<'a> {
 }
 
 pub struct ChromoBuilder {
-    graph: Graph,
+    graph: Rc<Graph>,
     low_deg_nodes_id: Vec<Id>,
     high_deg_nodes_id: Vec<Id>,
 }
@@ -82,7 +84,7 @@ impl ChromoBuilder {
         let high_deg_nodes_id = high_deg_nodes.iter().map(|(&id, _)| id).collect();
 
         ChromoBuilder {
-            graph,
+            graph: Rc::new(graph),
             low_deg_nodes_id,
             high_deg_nodes_id,
         }
@@ -105,7 +107,7 @@ impl ChromoBuilder {
         Chromo {
             gene,
             phene: None,
-            graph: &self.graph,
+            graph: Rc::clone(&self.graph),
             coloring: None,
         }
     }
