@@ -66,3 +66,96 @@ pub mod error {
 
     impl Error for VarLifetimeError {}
 }
+
+#[test]
+fn var_lt_new_test() {
+    let var_lt = VarLifetime::new(0, 1, 5);
+
+    assert!(matches!(
+        var_lt,
+        Ok(VarLifetime {
+            id: 0,
+            t_def: 1,
+            t_use: 5
+        })
+    ));
+
+    let var_lt = VarLifetime::new(0, 5, 1);
+
+    assert!(matches!(var_lt, Err(_)));
+}
+
+#[test]
+fn var_lt_overlap_test() {
+    /* Overlap cases */
+    let var_lt_a = VarLifetime::new(1, 3, 12).unwrap();
+    let var_lt_b = VarLifetime::new(2, 3, 12).unwrap();
+
+    assert!(var_lt_a.overlap(&var_lt_b));
+    assert!(var_lt_b.overlap(&var_lt_a));
+
+    let var_lt_a = VarLifetime::new(1, 3, 12).unwrap();
+    let var_lt_b = VarLifetime::new(2, 6, 17).unwrap();
+
+    assert!(var_lt_a.overlap(&var_lt_b));
+    assert!(var_lt_b.overlap(&var_lt_a));
+
+    let var_lt_a = VarLifetime::new(1, 8, 10).unwrap();
+    let var_lt_b = VarLifetime::new(2, 8, 15).unwrap();
+
+    assert!(var_lt_a.overlap(&var_lt_b));
+    assert!(var_lt_b.overlap(&var_lt_a));
+
+    let var_lt_a = VarLifetime::new(1, 10, 15).unwrap();
+    let var_lt_b = VarLifetime::new(2, 8, 15).unwrap();
+
+    assert!(var_lt_a.overlap(&var_lt_b));
+    assert!(var_lt_b.overlap(&var_lt_a));
+
+    /* Non-overlap cases */
+    let var_lt_a = VarLifetime::new(1, 6, 9).unwrap();
+    let var_lt_b = VarLifetime::new(2, 9, 12).unwrap();
+
+    assert!(!var_lt_a.overlap(&var_lt_b));
+    assert!(!var_lt_b.overlap(&var_lt_a));
+
+    let var_lt_a = VarLifetime::new(1, 6, 9).unwrap();
+    let var_lt_b = VarLifetime::new(2, 20, 25).unwrap();
+
+    assert!(!var_lt_a.overlap(&var_lt_b));
+    assert!(!var_lt_b.overlap(&var_lt_a));
+}
+
+#[test]
+fn var_lt_cmp_test() {
+    let var_lt_a = VarLifetime::new(1, 3, 15).unwrap();
+    let var_lt_b = VarLifetime::new(2, 3, 15).unwrap();
+
+    assert!(var_lt_a == var_lt_b);
+
+    assert!(matches!(
+        var_lt_a.partial_cmp(&var_lt_b),
+        Some(Ordering::Equal)
+    ));
+
+    let var_lt_a = VarLifetime::new(1, 6, 9).unwrap();
+    let var_lt_b = VarLifetime::new(2, 20, 25).unwrap();
+
+    assert!(matches!(
+        var_lt_a.partial_cmp(&var_lt_b),
+        Some(Ordering::Less)
+    ));
+
+    assert!(matches!(
+        var_lt_b.partial_cmp(&var_lt_a),
+        Some(Ordering::Greater)
+    ));
+
+    assert!(var_lt_a <= var_lt_b);
+    assert!(var_lt_a < var_lt_b);
+
+    let var_lt_a = VarLifetime::new(1, 3, 15).unwrap();
+    let var_lt_b = VarLifetime::new(2, 14, 16).unwrap();
+
+    assert!(matches!(var_lt_a.partial_cmp(&var_lt_b), None));
+}
