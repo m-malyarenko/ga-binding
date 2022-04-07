@@ -6,7 +6,7 @@ use crate::lifetime::{VarLifetime, VarLifetimeId};
 #[derive(Debug)]
 pub struct VarLifetimeGraphNode {
     pub deg: u16,
-    adj_set: HashSet<VarLifetimeId>,
+    pub adj_set: HashSet<VarLifetimeId>,
 }
 
 impl VarLifetimeGraphNode {
