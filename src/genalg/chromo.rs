@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use rand::seq::SliceRandom;
@@ -42,23 +43,28 @@ impl Chromo {
     }
 
     fn color_graph(&self) -> (u16, Vec<(Id, Color)>) {
-        let mut coloring = Vec::new();
-        let mut current_colour: Color = 0;
+        let mut coloring = HashMap::new();
+        let mut current_color: Color = 0;
 
-        coloring.push((self.gene[0], current_colour));
+        for id in &self.gene {
+            let node_adj_set = &self.graph.nodes[id].adj_set;
+            let node_adj_coloring: Vec<Color> = node_adj_set
+                .iter()
+                .filter_map(|adj_id| coloring.get(adj_id))
+                .copied()
+                .collect();
 
-        let mut prev_id: Id = self.gene[0];
-
-        for &id in self.gene.iter().skip(1) {
-            if self.graph.nodes[&prev_id].is_adjacent(id) {
-                current_colour += 1;
+            if node_adj_coloring
+                .iter()
+                .any(|&color| color == current_color)
+            {
+                current_color += 1;
             }
 
-            coloring.push((id, current_colour));
-            prev_id = id;
+            coloring.insert(*id, current_color);
         }
 
-        (current_colour + 1, coloring)
+        (current_color + 1, coloring.into_iter().collect())
     }
 }
 
