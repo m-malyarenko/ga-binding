@@ -22,7 +22,7 @@ impl Chromo {
         self.gene.len()
     }
 
-    pub fn gene(&mut self) -> &[Id] {
+    pub fn gene(&self) -> &[Id] {
         &self.gene
     }
 
