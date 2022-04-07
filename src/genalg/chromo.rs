@@ -18,6 +18,10 @@ pub struct Chromo {
 }
 
 impl Chromo {
+    pub fn size(&self) -> usize {
+        self.gene.len()
+    }
+
     pub fn gene(&mut self) -> &[Id] {
         &self.gene
     }
@@ -40,6 +44,16 @@ impl Chromo {
         }
 
         self.coloring.as_ref().unwrap()
+    }
+
+    pub fn swap_genes(&mut self, locus_a: usize, locus_b: usize) {
+        if locus_a >= self.gene().len() || locus_a >= self.gene().len() {
+            panic!("locus is out of bounds of chromosome")
+        }
+    
+        self.gene.swap(locus_a, locus_b);
+        self.phene = None;
+        self.coloring = None;
     }
 
     fn color_graph(&self) -> (u16, Vec<(Id, Color)>) {
