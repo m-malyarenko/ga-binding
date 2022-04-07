@@ -18,6 +18,10 @@ pub struct Chromo {
 }
 
 impl Chromo {
+    pub fn new(gene: Vec<Id>, graph: Rc<Graph>) -> Chromo {
+        Chromo { gene, graph }
+    }
+
     pub fn size(&self) -> usize {
         self.gene.len()
     }
@@ -32,14 +36,6 @@ impl Chromo {
 
     pub fn get_coloring(&self) -> Vec<(Id, Color)> {
         self.color_graph().1
-    }
-
-    pub fn get_deg(&self, locus: usize) -> u16 {
-        if locus >= self.gene.len() {
-            panic!("locus is out of bounds of chromosome")
-        }
-
-        self.graph.nodes[&self.gene[locus]].deg
     }
 
     pub fn swap_genes(&mut self, locus_a: usize, locus_b: usize) {
@@ -117,21 +113,6 @@ impl ChromoBuilder {
             .into_iter()
             .chain(high_genes.into_iter())
             .collect();
-
-        Chromo {
-            gene,
-            graph: Rc::clone(&self.graph),
-        }
-    }
-
-    pub fn build_chromo(&self, gene: Vec<Id>) -> Chromo {
-        if gene.len() != self.graph.nodes.len() {
-            panic!("building chromosome with invalid size")
-        }
-
-        if gene.iter().any(|id| !self.graph.nodes.contains_key(id)) {
-            panic!("invalid var lifetime id list")
-        }
 
         Chromo {
             gene,
