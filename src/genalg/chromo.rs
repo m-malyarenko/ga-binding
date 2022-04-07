@@ -34,6 +34,14 @@ impl Chromo {
         self.color_graph().1
     }
 
+    pub fn get_deg(&self, locus: usize) -> u16 {
+        if locus >= self.gene.len() {
+            panic!("locus is out of bounds of chromosome")
+        }
+
+        self.graph.nodes[&self.gene[locus]].deg
+    }
+
     pub fn swap_genes(&mut self, locus_a: usize, locus_b: usize) {
         if locus_a >= self.gene().len() || locus_a >= self.gene().len() {
             panic!("locus is out of bounds of chromosome")
