@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::panic;
 use std::rc::Rc;
 
 use rand::seq::SliceRandom;
@@ -37,7 +38,7 @@ impl Chromo {
         if locus_a >= self.gene().len() || locus_a >= self.gene().len() {
             panic!("locus is out of bounds of chromosome")
         }
-    
+
         self.gene.swap(locus_a, locus_b);
     }
 
@@ -95,7 +96,7 @@ impl ChromoBuilder {
         }
     }
 
-    pub fn yield_chromo(&self) -> Chromo {
+    pub fn build_rand_chromo(&self) -> Chromo {
         let mut rng = thread_rng();
 
         let mut low_genes = self.low_deg_nodes_id.clone();
@@ -108,6 +109,21 @@ impl ChromoBuilder {
             .into_iter()
             .chain(high_genes.into_iter())
             .collect();
+
+        Chromo {
+            gene,
+            graph: Rc::clone(&self.graph),
+        }
+    }
+
+    pub fn build_chromo(&self, gene: Vec<Id>) -> Chromo {
+        if gene.len() != self.graph.nodes.len() {
+            panic!("building chromosome with invalid size")
+        }
+
+        if gene.iter().any(|id| !self.graph.nodes.contains_key(id)) {
+            panic!("invalid var lifetime id list")
+        }
 
         Chromo {
             gene,
