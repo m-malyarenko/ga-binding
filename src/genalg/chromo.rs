@@ -10,11 +10,10 @@ use crate::lifetime::VarLifetimeId as Id;
 
 type Color = u16;
 
+#[derive(Clone)]
 pub struct Chromo {
     gene: Vec<Id>,
-    phene: Option<u16>,
     graph: Rc<Graph>,
-    coloring: Option<Vec<(Id, Color)>>,
 }
 
 impl Chromo {
@@ -26,24 +25,12 @@ impl Chromo {
         &self.gene
     }
 
-    pub fn phene(&mut self) -> u16 {
-        if let None = self.phene {
-            let (phene, coloring) = self.color_graph();
-            self.phene = Some(phene);
-            self.coloring = Some(coloring);
-        }
-
-        self.phene.unwrap()
+    pub fn phene(&self) -> u16 {
+        self.color_graph().0
     }
 
-    pub fn get_coloring(&mut self) -> &[(Id, Color)] {
-        if let None = self.coloring {
-            let (phene, coloring) = self.color_graph();
-            self.phene = Some(phene);
-            self.coloring = Some(coloring);
-        }
-
-        self.coloring.as_ref().unwrap()
+    pub fn get_coloring(&self) -> Vec<(Id, Color)> {
+        self.color_graph().1
     }
 
     pub fn swap_genes(&mut self, locus_a: usize, locus_b: usize) {
@@ -52,8 +39,6 @@ impl Chromo {
         }
     
         self.gene.swap(locus_a, locus_b);
-        self.phene = None;
-        self.coloring = None;
     }
 
     fn color_graph(&self) -> (u16, Vec<(Id, Color)>) {
@@ -126,9 +111,7 @@ impl ChromoBuilder {
 
         Chromo {
             gene,
-            phene: None,
             graph: Rc::clone(&self.graph),
-            coloring: None,
         }
     }
 }
