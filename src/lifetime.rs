@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::fmt;
 
 use error::VarLifetimeError;
 
@@ -44,6 +45,16 @@ impl PartialOrd for VarLifetime {
         } else {
             None
         }
+    }
+}
+
+impl fmt::Display for VarLifetime {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "id: {}, def: {}, use: {}",
+            self.id, self.t_def, self.t_use
+        )
     }
 }
 
