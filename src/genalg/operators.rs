@@ -5,7 +5,6 @@ use rand::Rng;
 
 use crate::genalg::chromo::Chromo;
 use crate::graph::VarLifetimeGraph as Graph;
-use crate::lifetime::VarLifetimeId as Id;
 
 pub fn select(population: &[Chromo], target_size: usize) -> Vec<Chromo> {
     if population.is_empty() {
@@ -62,23 +61,25 @@ pub fn cross(parent_a: &Chromo, parent_b: &Chromo, graph: Rc<Graph>) -> Chromo {
         panic!("crossing chromosomes with different size")
     }
 
-    let mut unused_id_set: HashSet<Id> = parent_a.gene().iter().copied().collect();
+    let mut used_id_set = HashSet::new();
 
     let child_gene = parent_a
         .gene()
         .iter()
         .zip(parent_b.gene())
         .map(|(&id_a, &id_b)| {
-            if !unused_id_set.contains(&id_a) {
+            if used_id_set.contains(&id_a) {
+                used_id_set.insert(id_b);
                 id_b
-            } else if !unused_id_set.contains(&id_b) {
+            } else if used_id_set.contains(&id_b) {
+                used_id_set.insert(id_a);
                 id_a
             } else {
                 if graph.nodes[&id_a].deg < graph.nodes[&id_b].deg {
-                    unused_id_set.remove(&id_a);
+                    used_id_set.insert(id_a);
                     id_a
                 } else {
-                    unused_id_set.remove(&id_b);
+                    used_id_set.insert(id_b);
                     id_b
                 }
             }
