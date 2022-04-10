@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::fmt;
 
 use crate::lifetime::{VarLifetime, VarLifetimeId};
 
@@ -15,6 +16,13 @@ impl VarLifetimeGraphNode {
     }
 }
 
+impl fmt::Display for VarLifetimeGraphNode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "degree: {}, adjacency set: {:?}", self.deg, self.adj_set)
+    }
+}
+
+#[derive(Debug)]
 pub struct VarLifetimeGraph {
     pub nodes: HashMap<VarLifetimeId, VarLifetimeGraphNode>,
 }
@@ -37,5 +45,59 @@ impl VarLifetimeGraph {
             .collect();
 
         VarLifetimeGraph { nodes }
+    }
+}
+
+impl fmt::Display for VarLifetimeGraph {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut output_string: String = String::new();
+
+        for (&id, node) in &self.nodes {
+            output_string.push_str(&format!("id: {}, node: [{}]\n", id, node));
+        }
+
+        output_string.pop(); // Delete last newline character
+
+        write!(f, "{}", output_string)
+    }
+}
+
+impl VarLifetimeGraph {
+    pub fn to_dot(&self, names: &HashMap<VarLifetimeId, String>) -> String {
+        let mut dot_string = String::new();
+        let mut used_edges = HashSet::new();
+
+        dot_string += &"graph {\n";
+
+        for (&id, node) in &self.nodes {
+            dot_string.push('\t');
+
+            if let Some(name) = names.get(&id) {
+                dot_string += name;
+            } else {
+                dot_string += &id.to_string();
+            };
+
+            dot_string += &" -- { ";
+
+            for &adj_node_id in &node.adj_set {
+                if !used_edges.contains(&(adj_node_id, id)) {
+                    if let Some(name) = names.get(&adj_node_id) {
+                        dot_string += name;
+                    } else {
+                        dot_string += &id.to_string();
+                    };
+
+                    dot_string += &" ";
+                    used_edges.insert((id, adj_node_id));
+                }
+            }
+
+            dot_string += &"}\n";
+        }
+
+        dot_string += &"}\n";
+
+        dot_string
     }
 }
