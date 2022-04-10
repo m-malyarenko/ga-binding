@@ -8,15 +8,11 @@ use error::VarLifetimeError;
 pub type VarId = u16;
 
 #[derive(Clone, Copy, Debug)]
-pub struct VarLifetime {
-    pub id: VarId,
-    t_def: u16,
-    t_use: u16,
-}
+pub struct VarLifetime(u16, u16);
 
 impl VarLifetime {
-    pub fn new(id: VarId, t_def: u16, t_use: u16) -> Result<VarLifetime, VarLifetimeError> {
-        let var_lt = VarLifetime { id, t_def, t_use };
+    fn new(t_def: u16, t_use: u16) -> Result<VarLifetime, VarLifetimeError> {
+        let var_lt = VarLifetime(t_def, t_use);
 
         if t_def <= t_use {
             Ok(var_lt)
@@ -26,13 +22,13 @@ impl VarLifetime {
     }
 
     pub fn overlap(&self, other: &VarLifetime) -> bool {
-        !(self.t_use < other.t_def || other.t_use < self.t_def)
+        !(self.1 < other.0 || other.1 < self.0)
     }
 }
 
 impl PartialEq for VarLifetime {
     fn eq(&self, other: &VarLifetime) -> bool {
-        self.t_def == other.t_def && self.t_use == other.t_use
+        self.0 == other.0 && self.1 == other.1
     }
 }
 
@@ -43,7 +39,7 @@ impl PartialOrd for VarLifetime {
         }
 
         if !self.overlap(other) {
-            Some(self.t_use.cmp(&other.t_def))
+            Some(self.1.cmp(&other.0))
         } else {
             None
         }
@@ -53,7 +49,7 @@ impl PartialOrd for VarLifetime {
 impl VarLifetime {
     const CSV_SEPARATOR: char = ';';
 
-    pub fn from_csv(file: &str) -> (Vec<VarLifetime>, HashMap<VarId, String>) {
+    pub fn from_csv(file: &str) -> (HashMap<VarId, VarLifetime>, HashMap<VarId, String>) {
         let contents =
             fs::read_to_string(file).expect(&format!("failed to read from file '{}'", file));
 
@@ -113,9 +109,7 @@ impl VarLifetime {
         let vars_lt = vars_lt
             .iter()
             .enumerate()
-            .map(|(id, &(t_def, t_use))| {
-                VarLifetime::new(id as VarId, t_def, t_use).unwrap()
-            })
+            .map(|(id, &(t_def, t_use))| (id as VarId, VarLifetime::new(t_def, t_use).unwrap()))
             .collect();
 
         (vars_lt, var_names)
@@ -124,11 +118,7 @@ impl VarLifetime {
 
 impl fmt::Display for VarLifetime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "id: {}, def: {}, use: {}",
-            self.id, self.t_def, self.t_use
-        )
+        write!(f, "def: {}, use: {}", self.0, self.1)
     }
 }
 
@@ -158,18 +148,11 @@ pub mod error {
 
 #[test]
 fn var_lt_new_test() {
-    let var_lt = VarLifetime::new(0, 1, 5);
+    let var_lt = VarLifetime::new(1, 5);
 
-    assert!(matches!(
-        var_lt,
-        Ok(VarLifetime {
-            id: 0,
-            t_def: 1,
-            t_use: 5
-        })
-    ));
+    assert!(matches!(var_lt, Ok(VarLifetime(1, 5))));
 
-    let var_lt = VarLifetime::new(0, 5, 1);
+    let var_lt = VarLifetime::new(5, 1);
 
     assert!(matches!(var_lt, Err(_)));
 }
@@ -177,45 +160,45 @@ fn var_lt_new_test() {
 #[test]
 fn var_lt_overlap_test() {
     /* Overlap cases */
-    let var_lt_a = VarLifetime::new(1, 3, 12).unwrap();
-    let var_lt_b = VarLifetime::new(2, 3, 12).unwrap();
+    let var_lt_a = VarLifetime::new(3, 12).unwrap();
+    let var_lt_b = VarLifetime::new(3, 12).unwrap();
 
     assert!(var_lt_a.overlap(&var_lt_b));
     assert!(var_lt_b.overlap(&var_lt_a));
 
-    let var_lt_a = VarLifetime::new(1, 3, 12).unwrap();
-    let var_lt_b = VarLifetime::new(2, 6, 17).unwrap();
+    let var_lt_a = VarLifetime::new(3, 12).unwrap();
+    let var_lt_b = VarLifetime::new(6, 17).unwrap();
 
     assert!(var_lt_a.overlap(&var_lt_b));
     assert!(var_lt_b.overlap(&var_lt_a));
 
-    let var_lt_a = VarLifetime::new(1, 8, 10).unwrap();
-    let var_lt_b = VarLifetime::new(2, 8, 15).unwrap();
+    let var_lt_a = VarLifetime::new(8, 10).unwrap();
+    let var_lt_b = VarLifetime::new(8, 15).unwrap();
 
     assert!(var_lt_a.overlap(&var_lt_b));
     assert!(var_lt_b.overlap(&var_lt_a));
 
-    let var_lt_a = VarLifetime::new(1, 10, 15).unwrap();
-    let var_lt_b = VarLifetime::new(2, 8, 15).unwrap();
+    let var_lt_a = VarLifetime::new(10, 15).unwrap();
+    let var_lt_b = VarLifetime::new(8, 15).unwrap();
 
     assert!(var_lt_a.overlap(&var_lt_b));
     assert!(var_lt_b.overlap(&var_lt_a));
 
-    let var_lt_a = VarLifetime::new(1, 0, 0).unwrap();
-    let var_lt_b = VarLifetime::new(2, 0, 3).unwrap();
+    let var_lt_a = VarLifetime::new(0, 0).unwrap();
+    let var_lt_b = VarLifetime::new(0, 3).unwrap();
 
     assert!(var_lt_a.overlap(&var_lt_b));
     assert!(var_lt_b.overlap(&var_lt_a));
 
     /* Non-overlap cases */
-    let var_lt_a = VarLifetime::new(1, 6, 9).unwrap();
-    let var_lt_b = VarLifetime::new(2, 10, 12).unwrap();
+    let var_lt_a = VarLifetime::new(6, 9).unwrap();
+    let var_lt_b = VarLifetime::new(10, 12).unwrap();
 
     assert!(!var_lt_a.overlap(&var_lt_b));
     assert!(!var_lt_b.overlap(&var_lt_a));
 
-    let var_lt_a = VarLifetime::new(1, 6, 9).unwrap();
-    let var_lt_b = VarLifetime::new(2, 20, 25).unwrap();
+    let var_lt_a = VarLifetime::new(6, 9).unwrap();
+    let var_lt_b = VarLifetime::new(20, 25).unwrap();
 
     assert!(!var_lt_a.overlap(&var_lt_b));
     assert!(!var_lt_b.overlap(&var_lt_a));
@@ -223,8 +206,8 @@ fn var_lt_overlap_test() {
 
 #[test]
 fn var_lt_cmp_test() {
-    let var_lt_a = VarLifetime::new(1, 3, 15).unwrap();
-    let var_lt_b = VarLifetime::new(2, 3, 15).unwrap();
+    let var_lt_a = VarLifetime::new(3, 15).unwrap();
+    let var_lt_b = VarLifetime::new(3, 15).unwrap();
 
     assert!(var_lt_a == var_lt_b);
 
@@ -233,8 +216,8 @@ fn var_lt_cmp_test() {
         Some(Ordering::Equal)
     ));
 
-    let var_lt_a = VarLifetime::new(1, 6, 9).unwrap();
-    let var_lt_b = VarLifetime::new(2, 20, 25).unwrap();
+    let var_lt_a = VarLifetime::new(6, 9).unwrap();
+    let var_lt_b = VarLifetime::new(20, 25).unwrap();
 
     assert!(matches!(
         var_lt_a.partial_cmp(&var_lt_b),
@@ -249,8 +232,8 @@ fn var_lt_cmp_test() {
     assert!(var_lt_a <= var_lt_b);
     assert!(var_lt_a < var_lt_b);
 
-    let var_lt_a = VarLifetime::new(1, 3, 15).unwrap();
-    let var_lt_b = VarLifetime::new(2, 14, 16).unwrap();
+    let var_lt_a = VarLifetime::new(3, 15).unwrap();
+    let var_lt_b = VarLifetime::new(14, 16).unwrap();
 
     assert!(matches!(var_lt_a.partial_cmp(&var_lt_b), None));
 }
@@ -261,7 +244,7 @@ fn var_lt_from_csv_test() {
 
     let (vars_lt, var_names) = VarLifetime::from_csv(vars_lt_file);
 
-    for var_lt in vars_lt {
-        println!("{}:\t\t{}", var_names[&var_lt.id], var_lt);
+    for (id, var_lt) in vars_lt {
+        println!("{}:\t\t{}", var_names[&id], var_lt);
     }
 }

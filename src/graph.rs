@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt;
 
-use crate::lifetime::{VarLifetime, VarId};
+use crate::lifetime::{VarId, VarLifetime};
 
 #[derive(Debug)]
 pub struct VarLifetimeGraphNode {
@@ -28,16 +28,16 @@ pub struct VarLifetimeGraph {
 }
 
 impl VarLifetimeGraph {
-    pub fn new(vars_lt: &[VarLifetime]) -> VarLifetimeGraph {
+    pub fn new(vars_lt: &HashMap<VarId, VarLifetime>) -> VarLifetimeGraph {
         let nodes = vars_lt
             .iter()
-            .map(|var_lt| {
-                let id = var_lt.id;
+            .map(|(&id, var_lt)| {
                 let adj_set: HashSet<VarId> = vars_lt
                     .iter()
-                    .filter(|&v| v.id != var_lt.id && v.overlap(var_lt))
-                    .map(|&v| v.id)
+                    .filter(|&(&v_id, v)| v_id != id && v.overlap(var_lt))
+                    .map(|(&v_id, _)| v_id)
                     .collect();
+
                 let deg = adj_set.len() as u16;
 
                 (id, VarLifetimeGraphNode { deg, adj_set })
