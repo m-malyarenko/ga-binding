@@ -1,34 +1,32 @@
-use std::rc::Rc;
 use std::collections::HashSet;
+use std::rc::Rc;
 
 use rand::Rng;
 
 use crate::genalg::chromo::Chromo;
 use crate::graph::VarLifetimeGraph as Graph;
 
-pub fn select(population: &[Chromo], target_size: usize) -> Vec<Chromo> {
+pub fn select_ranking(population: &[Chromo], target_size: usize) -> Vec<Chromo> {
     if population.is_empty() {
         return Vec::default();
     } else if population.len() == 1 {
         return vec![population[0].clone()];
     }
 
-    fn fitness(phene: u16, norm_factor: f32) -> f32 {
-        phene as f32 / norm_factor
-    }
-
-    let mut population_rating: Vec<(&Chromo, f32)> = population
+    let mut population_ranking: Vec<(&Chromo, u16)> = population
         .iter()
-        .map(|chromo| (chromo, fitness(chromo.phene(), population.len() as f32)))
+        .map(|chromo| (chromo, chromo.phene()))
         .collect();
 
-    population_rating
-        .sort_by(|(_, f_a), (_, f_b)| f_a.partial_cmp(f_b).expect("failed to compare fittnes"));
+    population_ranking.sort_by(|(_, fit_a), (_, fit_b)| fit_b.cmp(fit_a));
 
-    let roulette: Vec<_> = population_rating
-        .iter()
-        .enumerate()
-        .map(|(sector_size, &(c, _))| (sector_size as usize, c))
+    let roulette: Vec<_> =
+        std::iter::successors(Some((0_usize, 1_usize)), |&(low_limit, secor_size)| {
+            Some((low_limit + secor_size, secor_size + 1))
+        })
+        .take(population.len())
+        .zip(population_ranking)
+        .map(|((low_limit, secor_size), (c, _))| ((low_limit, low_limit + secor_size), c))
         .collect();
 
     let mut selection_pool = Vec::new();
@@ -37,8 +35,10 @@ pub fn select(population: &[Chromo], target_size: usize) -> Vec<Chromo> {
     let total_size = ((1 + population.len()) / 2) * population.len();
 
     for _i in 0..target_size.min(population.len()) {
-        for &(sector_size, c) in &roulette {
-            if rand.gen_ratio(sector_size as u32, total_size as u32) {
+        let selector = rand.gen_range(0..total_size);
+
+        for &((low_limit, high_limit), c) in &roulette {
+            if (selector >= low_limit) && (selector < high_limit) {
                 selection_pool.push(c.clone());
                 break;
             }
