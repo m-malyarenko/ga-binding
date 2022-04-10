@@ -48,6 +48,27 @@ pub fn select_ranking(population: &[Chromo], target_size: usize) -> Vec<Chromo> 
     selection_pool
 }
 
+pub fn select_elite(population: &[Chromo], target_size: usize) -> Vec<Chromo> {
+    if population.is_empty() {
+        return Vec::default();
+    } else if population.len() == 1 {
+        return vec![population[0].clone()];
+    }
+
+    let mut population_ranking: Vec<(&Chromo, u16)> = population
+        .iter()
+        .map(|chromo| (chromo, chromo.phene()))
+        .collect();
+
+    population_ranking.sort_by(|(_, fit_a), (_, fit_b)| fit_b.cmp(fit_a));
+
+    population_ranking
+        .iter()
+        .take(target_size.min(population.len()))
+        .map(|&(c, _)| c.clone())
+        .collect()
+}
+
 pub fn mutate(chromo: &mut Chromo) {
     let chromo_size = chromo.size();
     let locus_a = rand::random::<usize>() % chromo_size;
