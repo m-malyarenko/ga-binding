@@ -26,7 +26,7 @@ impl VarLifetime {
     }
 
     pub fn overlap(&self, other: &VarLifetime) -> bool {
-        !(self.t_use <= other.t_def || other.t_use <= self.t_def)
+        !(self.t_use < other.t_def || other.t_use < self.t_def)
     }
 }
 
@@ -201,9 +201,15 @@ fn var_lt_overlap_test() {
     assert!(var_lt_a.overlap(&var_lt_b));
     assert!(var_lt_b.overlap(&var_lt_a));
 
+    let var_lt_a = VarLifetime::new(1, 0, 0).unwrap();
+    let var_lt_b = VarLifetime::new(2, 0, 3).unwrap();
+
+    assert!(var_lt_a.overlap(&var_lt_b));
+    assert!(var_lt_b.overlap(&var_lt_a));
+
     /* Non-overlap cases */
     let var_lt_a = VarLifetime::new(1, 6, 9).unwrap();
-    let var_lt_b = VarLifetime::new(2, 9, 12).unwrap();
+    let var_lt_b = VarLifetime::new(2, 10, 12).unwrap();
 
     assert!(!var_lt_a.overlap(&var_lt_b));
     assert!(!var_lt_b.overlap(&var_lt_a));
