@@ -1,5 +1,7 @@
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::fmt;
+use std::fs;
 
 use error::VarLifetimeError;
 
@@ -45,6 +47,78 @@ impl PartialOrd for VarLifetime {
         } else {
             None
         }
+    }
+}
+
+impl VarLifetime {
+    const CSV_SEPARATOR: char = ';';
+
+    pub fn from_csv(file: &str) -> (Vec<VarLifetime>, HashMap<VarLifetimeId, String>) {
+        let contents =
+            fs::read_to_string(file).expect(&format!("failed to read from file '{}'", file));
+
+        let lines: Vec<&str> = contents.lines().collect();
+
+        if lines.len() <= 1 {
+            panic!("variables lifetime csv is empty")
+        }
+
+        let var_names: HashMap<_, _> = lines[0]
+            .split(VarLifetime::CSV_SEPARATOR)
+            .enumerate()
+            .map(|(id, name)| (id as VarLifetimeId, name.to_owned()))
+            .collect();
+
+        let vars_num = var_names.len();
+        let cycles_num = lines.len() - 1; // Ignore variable names CSV line
+
+        let mut vars_lt = vec![(0_u16, 0_u16); vars_num]; // Create empty lifetime vector
+        let mut vars_def_status = vec![false; vars_num];
+        let mut vars_use_status = vec![false; vars_num];
+
+        for (cycle_idx, &line) in lines.iter().skip(1).enumerate() {
+            for (var_id, tag) in line
+                .split(VarLifetime::CSV_SEPARATOR)
+                .take(vars_num)
+                .enumerate()
+            {
+                if !tag.is_empty() {
+                    /* Active cycle */
+                    if vars_use_status[var_id] {
+                        panic!("variable lifetime redefinition");
+                    }
+
+                    if !vars_def_status[var_id] {
+                        vars_lt[var_id].0 = cycle_idx as u16;
+                        vars_def_status[var_id] = true;
+                    }
+                } else {
+                    /* Inactive cycle */
+                    if vars_def_status[var_id] && !vars_use_status[var_id] {
+                        vars_lt[var_id].1 = (cycle_idx - 1) as u16;
+                        vars_use_status[var_id] = true;
+                    }
+                }
+            }
+        }
+
+        /* Handle last cycle variable usage */
+        for var_id in 0..vars_num {
+            if vars_def_status[var_id] && !vars_use_status[var_id] {
+                vars_use_status[var_id] = true;
+                vars_lt[var_id].1 = (cycles_num - 1) as u16;
+            }
+        }
+
+        let vars_lt = vars_lt
+            .iter()
+            .enumerate()
+            .map(|(id, &(t_def, t_use))| {
+                VarLifetime::new(id as VarLifetimeId, t_def, t_use).unwrap()
+            })
+            .collect();
+
+        (vars_lt, var_names)
     }
 }
 
@@ -173,4 +247,15 @@ fn var_lt_cmp_test() {
     let var_lt_b = VarLifetime::new(2, 14, 16).unwrap();
 
     assert!(matches!(var_lt_a.partial_cmp(&var_lt_b), None));
+}
+
+#[test]
+fn var_lt_from_csv_test() {
+    let vars_lt_file = "data/var_lifetime.csv";
+
+    let (vars_lt, var_names) = VarLifetime::from_csv(vars_lt_file);
+
+    for var_lt in vars_lt {
+        println!("{}:\t\t{}", var_names[&var_lt.id], var_lt);
+    }
 }
