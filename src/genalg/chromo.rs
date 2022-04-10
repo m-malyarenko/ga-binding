@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::panic;
 use std::rc::Rc;
 
@@ -81,6 +82,18 @@ impl Chromo {
         }
 
         (current_color + 1, coloring.into_iter().collect())
+    }
+}
+
+impl fmt::Display for Chromo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "gene: {:?}, phene: {}, coloring: {:?}",
+            self.gene,
+            self.phene(),
+            self.get_coloring()
+        )
     }
 }
 
