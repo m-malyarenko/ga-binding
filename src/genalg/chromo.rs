@@ -11,15 +11,25 @@ use crate::lifetime::VarLifetimeId as Id;
 
 type Color = u16;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Chromo {
     gene: Vec<Id>,
     graph: Rc<Graph>,
+
+    phene: Color,
+    coloring: Vec<(Id, Color)>,
 }
 
 impl Chromo {
     pub fn new(gene: Vec<Id>, graph: Rc<Graph>) -> Chromo {
-        Chromo { gene, graph }
+        let (phene, coloring) = Chromo::color_graph(&gene, &graph);
+
+        Chromo {
+            gene,
+            graph,
+            phene,
+            coloring,
+        }
     }
 
     pub fn size(&self) -> usize {
@@ -31,11 +41,11 @@ impl Chromo {
     }
 
     pub fn phene(&self) -> u16 {
-        self.color_graph().0
+        self.phene
     }
 
-    pub fn get_coloring(&self) -> Vec<(Id, Color)> {
-        self.color_graph().1
+    pub fn get_coloring(&self) -> &[(Id, Color)] {
+        &self.coloring
     }
 
     pub fn swap_genes(&mut self, locus_a: usize, locus_b: usize) {
@@ -44,14 +54,16 @@ impl Chromo {
         }
 
         self.gene.swap(locus_a, locus_b);
+
+        (self.phene, self.coloring) = Chromo::color_graph(&self.gene, &self.graph);
     }
 
-    fn color_graph(&self) -> (u16, Vec<(Id, Color)>) {
+    fn color_graph(gene: &[Id], graph: &Graph) -> (u16, Vec<(Id, Color)>) {
         let mut coloring = HashMap::new();
         let mut current_color: Color = 0;
 
-        for id in &self.gene {
-            let node_adj_set = &self.graph.nodes[id].adj_set;
+        for id in gene {
+            let node_adj_set = &graph.nodes[id].adj_set;
             let node_adj_coloring: Vec<Color> = node_adj_set
                 .iter()
                 .filter_map(|adj_id| coloring.get(adj_id))
@@ -79,7 +91,7 @@ pub struct ChromoBuilder {
 }
 
 impl ChromoBuilder {
-    pub fn new(graph: Graph) -> ChromoBuilder {
+    pub fn new(graph: Rc<Graph>) -> ChromoBuilder {
         let mut nodes_deg: Vec<u16> = graph.nodes.iter().map(|(_, v)| v.deg).collect();
         nodes_deg.sort();
 
@@ -94,7 +106,7 @@ impl ChromoBuilder {
         let high_deg_nodes_id = high_deg_nodes.iter().map(|(&id, _)| id).collect();
 
         ChromoBuilder {
-            graph: Rc::new(graph),
+            graph: graph,
             low_deg_nodes_id,
             high_deg_nodes_id,
         }
@@ -109,14 +121,18 @@ impl ChromoBuilder {
         low_genes.shuffle(&mut rng);
         high_genes.shuffle(&mut rng);
 
-        let gene = low_genes
+        let gene: Vec<Id> = low_genes
             .into_iter()
             .chain(high_genes.into_iter())
             .collect();
 
+        let (phene, coloring) = Chromo::color_graph(&gene, &self.graph);
+
         Chromo {
             gene,
             graph: Rc::clone(&self.graph),
+            phene,
+            coloring,
         }
     }
 }
