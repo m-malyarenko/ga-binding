@@ -8,21 +8,21 @@ use rand::thread_rng;
 
 use crate::graph::VarLifetimeGraph as Graph;
 use crate::graph::VarLifetimeGraphNode as GraphNode;
-use crate::lifetime::VarLifetimeId as Id;
+use crate::lifetime::VarId;
 
 type Color = u16;
 
 #[derive(Clone, Debug)]
 pub struct Chromo {
-    gene: Vec<Id>,
+    gene: Vec<VarId>,
     graph: Rc<Graph>,
 
     phene: Color,
-    coloring: Vec<(Id, Color)>,
+    coloring: Vec<(VarId, Color)>,
 }
 
 impl Chromo {
-    pub fn new(gene: Vec<Id>, graph: Rc<Graph>) -> Chromo {
+    pub fn new(gene: Vec<VarId>, graph: Rc<Graph>) -> Chromo {
         let (phene, coloring) = Chromo::color_graph(&gene, &graph);
 
         Chromo {
@@ -37,7 +37,7 @@ impl Chromo {
         self.gene.len()
     }
 
-    pub fn gene(&self) -> &[Id] {
+    pub fn gene(&self) -> &[VarId] {
         &self.gene
     }
 
@@ -45,7 +45,7 @@ impl Chromo {
         self.phene
     }
 
-    pub fn get_coloring(&self) -> &[(Id, Color)] {
+    pub fn get_coloring(&self) -> &[(VarId, Color)] {
         &self.coloring
     }
 
@@ -59,7 +59,7 @@ impl Chromo {
         (self.phene, self.coloring) = Chromo::color_graph(&self.gene, &self.graph);
     }
 
-    fn color_graph(gene: &[Id], graph: &Graph) -> (u16, Vec<(Id, Color)>) {
+    fn color_graph(gene: &[VarId], graph: &Graph) -> (u16, Vec<(VarId, Color)>) {
         let mut coloring = HashMap::new();
         let mut current_color: Color = 0;
 
@@ -99,8 +99,8 @@ impl fmt::Display for Chromo {
 
 pub struct ChromoBuilder {
     graph: Rc<Graph>,
-    low_deg_nodes_id: Vec<Id>,
-    high_deg_nodes_id: Vec<Id>,
+    low_deg_nodes_id: Vec<VarId>,
+    high_deg_nodes_id: Vec<VarId>,
 }
 
 impl ChromoBuilder {
@@ -109,7 +109,7 @@ impl ChromoBuilder {
         nodes_deg.sort();
 
         let nodes_deg_median = nodes_deg[(nodes_deg.len() + 1) / 2];
-        let (low_deg_nodes, high_deg_nodes): (Vec<(&Id, &GraphNode)>, Vec<(&Id, &GraphNode)>) =
+        let (low_deg_nodes, high_deg_nodes): (Vec<(&VarId, &GraphNode)>, Vec<(&VarId, &GraphNode)>) =
             graph
                 .nodes
                 .iter()
@@ -134,7 +134,7 @@ impl ChromoBuilder {
         low_genes.shuffle(&mut rng);
         high_genes.shuffle(&mut rng);
 
-        let gene: Vec<Id> = low_genes
+        let gene: Vec<VarId> = low_genes
             .into_iter()
             .chain(high_genes.into_iter())
             .collect();

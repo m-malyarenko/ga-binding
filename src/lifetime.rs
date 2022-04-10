@@ -5,17 +5,17 @@ use std::fs;
 
 use error::VarLifetimeError;
 
-pub type VarLifetimeId = u16;
+pub type VarId = u16;
 
 #[derive(Clone, Copy, Debug)]
 pub struct VarLifetime {
-    pub id: VarLifetimeId,
+    pub id: VarId,
     t_def: u16,
     t_use: u16,
 }
 
 impl VarLifetime {
-    pub fn new(id: VarLifetimeId, t_def: u16, t_use: u16) -> Result<VarLifetime, VarLifetimeError> {
+    pub fn new(id: VarId, t_def: u16, t_use: u16) -> Result<VarLifetime, VarLifetimeError> {
         let var_lt = VarLifetime { id, t_def, t_use };
 
         if t_def <= t_use {
@@ -53,7 +53,7 @@ impl PartialOrd for VarLifetime {
 impl VarLifetime {
     const CSV_SEPARATOR: char = ';';
 
-    pub fn from_csv(file: &str) -> (Vec<VarLifetime>, HashMap<VarLifetimeId, String>) {
+    pub fn from_csv(file: &str) -> (Vec<VarLifetime>, HashMap<VarId, String>) {
         let contents =
             fs::read_to_string(file).expect(&format!("failed to read from file '{}'", file));
 
@@ -66,7 +66,7 @@ impl VarLifetime {
         let var_names: HashMap<_, _> = lines[0]
             .split(VarLifetime::CSV_SEPARATOR)
             .enumerate()
-            .map(|(id, name)| (id as VarLifetimeId, name.to_owned()))
+            .map(|(id, name)| (id as VarId, name.to_owned()))
             .collect();
 
         let vars_num = var_names.len();
@@ -114,7 +114,7 @@ impl VarLifetime {
             .iter()
             .enumerate()
             .map(|(id, &(t_def, t_use))| {
-                VarLifetime::new(id as VarLifetimeId, t_def, t_use).unwrap()
+                VarLifetime::new(id as VarId, t_def, t_use).unwrap()
             })
             .collect();
 

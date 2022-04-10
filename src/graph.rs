@@ -2,16 +2,16 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt;
 
-use crate::lifetime::{VarLifetime, VarLifetimeId};
+use crate::lifetime::{VarLifetime, VarId};
 
 #[derive(Debug)]
 pub struct VarLifetimeGraphNode {
     pub deg: u16,
-    pub adj_set: HashSet<VarLifetimeId>,
+    pub adj_set: HashSet<VarId>,
 }
 
 impl VarLifetimeGraphNode {
-    pub fn is_adjacent(&self, id: VarLifetimeId) -> bool {
+    pub fn is_adjacent(&self, id: VarId) -> bool {
         self.adj_set.contains(&id)
     }
 }
@@ -24,7 +24,7 @@ impl fmt::Display for VarLifetimeGraphNode {
 
 #[derive(Debug)]
 pub struct VarLifetimeGraph {
-    pub nodes: HashMap<VarLifetimeId, VarLifetimeGraphNode>,
+    pub nodes: HashMap<VarId, VarLifetimeGraphNode>,
 }
 
 impl VarLifetimeGraph {
@@ -33,7 +33,7 @@ impl VarLifetimeGraph {
             .iter()
             .map(|var_lt| {
                 let id = var_lt.id;
-                let adj_set: HashSet<VarLifetimeId> = vars_lt
+                let adj_set: HashSet<VarId> = vars_lt
                     .iter()
                     .filter(|&v| v.id != var_lt.id && v.overlap(var_lt))
                     .map(|&v| v.id)
@@ -63,7 +63,7 @@ impl fmt::Display for VarLifetimeGraph {
 }
 
 impl VarLifetimeGraph {
-    pub fn to_dot(&self, names: &HashMap<VarLifetimeId, String>) -> String {
+    pub fn to_dot(&self, names: &HashMap<VarId, String>) -> String {
         let mut dot_string = String::new();
         let mut used_edges = HashSet::new();
 
