@@ -8,7 +8,7 @@ use error::VarLifetimeError;
 pub type VarId = u16;
 
 #[derive(Clone, Copy, Debug)]
-pub struct VarLifetime(u16, u16);
+pub struct VarLifetime(pub u16, pub u16);
 
 impl VarLifetime {
     fn new(t_def: u16, t_use: u16) -> Result<VarLifetime, VarLifetimeError> {
