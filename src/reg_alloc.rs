@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::panic;
 use std::fmt;
+use std::panic;
 
 use crate::lifetime::VarId;
 use crate::lifetime::VarLifetime;
@@ -56,16 +56,35 @@ impl RegAlloc {
 
 impl fmt::Display for RegAlloc {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let cycle_cells_strings: Vec<String> = self.cycle_cells.iter().map(|&var_id| {
-            if let Some(id) = var_id {
-                id.to_string()
-            } else {
-                "-".to_string()
-            }
-        }).collect();
+        let cycle_cells_strings: Vec<String> = self
+            .cycle_cells
+            .iter()
+            .map(|&var_id| {
+                if let Some(id) = var_id {
+                    id.to_string()
+                } else {
+                    "-".to_string()
+                }
+            })
+            .collect();
 
         let cycle_cells_string = cycle_cells_strings.join("\t");
 
         write!(f, "R{}:\t[ {} ]", self.id, cycle_cells_string)
+    }
+}
+
+impl RegAlloc {
+    pub fn to_csv(&self, names: &HashMap<VarId, String>) -> String {
+        let mut csv_fields = vec![format!("R{}", self.id)];
+        csv_fields.extend(self.cycle_cells.iter().map(|&var_id| {
+            if let Some(id) = var_id {
+                names[&id].clone()
+            } else {
+                String::default()
+            }
+        }));
+
+        csv_fields.join(";")
     }
 }
