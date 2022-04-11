@@ -54,6 +54,8 @@ pub fn select_elite(population: &[Chromo], target_size: usize) -> Vec<Chromo> {
         return Vec::default();
     } else if population.len() == 1 {
         return vec![population[0].clone()];
+    } else if population.len() == target_size {
+        return  population.to_owned();
     }
 
     let mut population_ranking: Vec<(&Chromo, u16)> = population
