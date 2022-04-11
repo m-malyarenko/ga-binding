@@ -1,16 +1,19 @@
 use rand::Rng;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::genalg::chromo::{Chromo, ChromoBuilder};
 use crate::genalg::operators;
 use crate::graph::VarLifetimeGraph as Graph;
+use crate::lifetime::VarId;
 
-struct GenAlg {
-    population: Vec<Chromo>,
-    selection_pool: Vec<Chromo>,
-    new_gen: Vec<Chromo>,
+pub struct GenAlg {
+    pub population: Vec<Chromo>,
+    pub selection_pool: Vec<Chromo>,
+    pub next_gen: Vec<Chromo>,
 
     graph: Rc<Graph>,
+    eval_matrix: HashMap<(VarId, VarId), u16>,
     chromo_builder: ChromoBuilder,
 
     mutation_ratio: (u32, u32),
@@ -27,7 +30,8 @@ impl GenAlg {
         GenAlg {
             population: Vec::new(),
             selection_pool: Vec::new(),
-            new_gen: Vec::new(),
+            next_gen: Vec::new(),
+            eval_matrix: GenAlg::create_eval_matrix(&graph),
             graph,
             chromo_builder,
             mutation_ratio,
@@ -42,7 +46,7 @@ impl GenAlg {
     }
 
     pub fn select(&mut self, target_size: usize) {
-        self.selection_pool = operators::select(&self.population, target_size);
+        self.selection_pool = operators::select_ranking(&self.population, target_size);
     }
 
     pub fn cross(&mut self) {
@@ -53,13 +57,16 @@ impl GenAlg {
         let mut rng = rand::thread_rng();
         let pool_size = self.selection_pool.len();
 
-        self.new_gen.clear();
+        self.next_gen.clear();
 
         for parent_a in &self.selection_pool {
             if rng.gen_ratio(self.cross_ratio.0, self.cross_ratio.1) {
                 let parent_b = &self.selection_pool[rng.gen_range(0..pool_size)];
-                self.new_gen
-                    .push(operators::cross(parent_a, parent_b, Rc::clone(&self.graph)));
+                self.next_gen.extend(operators::cross(
+                    (parent_a, parent_b),
+                    Rc::clone(&self.graph),
+                    &self.eval_matrix,
+                ));
             }
         }
 
@@ -67,13 +74,13 @@ impl GenAlg {
     }
 
     pub fn mutate(&mut self) {
-        if self.new_gen.is_empty() {
+        if self.next_gen.is_empty() {
             return;
         }
 
         let mut rng = rand::thread_rng();
 
-        for chromo in &mut self.new_gen {
+        for chromo in &mut self.next_gen {
             if rng.gen_ratio(self.mutation_ratio.0, self.mutation_ratio.1) {
                 operators::mutate(chromo);
             }
@@ -81,15 +88,39 @@ impl GenAlg {
     }
 
     pub fn accept(&mut self) {
-        self.population.extend(self.new_gen.drain(..));
+        self.population.extend(self.next_gen.drain(..));
     }
 
     pub fn reduce(&mut self, target_size: usize) {
-        // FIXME Сократить популяцию по функции элитарного отбора
-        self.population.truncate(target_size);
+        self.population = operators::select_elite(&self.population, target_size);
     }
 
     pub fn pick_winner(&self) -> Option<&Chromo> {
-        self.population.iter().max_by_key(|&chromo| chromo.phene())
+        self.population.iter().min_by_key(|&chromo| chromo.phene())
+    }
+
+    fn create_eval_matrix(graph: &Graph) -> HashMap<(VarId, VarId), u16> {
+        let nodes_num = graph.nodes.len() as u16;
+
+        graph
+            .nodes
+            .iter()
+            .flat_map(|(id_a, node_a)| {
+                graph.nodes.iter().filter_map(|(id_b, node_b)| {
+                    if *id_a != *id_b {
+                        let weight = node_a.deg
+                            + node_b.deg
+                            + if node_a.is_adjacent(*id_b) {
+                                nodes_num / 2 // TODO Придумать осознанный штрафной коэффициент
+                            } else {
+                                0
+                            };
+                        Some(((*id_a, *id_b), weight))
+                    } else {
+                        None
+                    }
+                })
+            })
+            .collect()
     }
 }
