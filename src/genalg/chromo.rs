@@ -109,11 +109,13 @@ impl ChromoBuilder {
         nodes_deg.sort();
 
         let nodes_deg_median = nodes_deg[(nodes_deg.len() + 1) / 2];
-        let (low_deg_nodes, high_deg_nodes): (Vec<(&VarId, &GraphNode)>, Vec<(&VarId, &GraphNode)>) =
-            graph
-                .nodes
-                .iter()
-                .partition(|(_, node)| node.deg < nodes_deg_median);
+        let (low_deg_nodes, high_deg_nodes): (
+            Vec<(&VarId, &GraphNode)>,
+            Vec<(&VarId, &GraphNode)>,
+        ) = graph
+            .nodes
+            .iter()
+            .partition(|(_, node)| node.deg < nodes_deg_median);
 
         let low_deg_nodes_id = low_deg_nodes.iter().map(|(&id, _)| id).collect();
         let high_deg_nodes_id = high_deg_nodes.iter().map(|(&id, _)| id).collect();
