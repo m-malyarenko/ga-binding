@@ -63,7 +63,7 @@ pub fn select_elite(population: &[Chromo], target_size: usize) -> Vec<Chromo> {
         .map(|chromo| (chromo, chromo.phene()))
         .collect();
 
-    population_ranking.sort_by(|(_, fit_a), (_, fit_b)| fit_b.cmp(fit_a));
+    population_ranking.sort_by(|(_, fit_a), (_, fit_b)| fit_a.cmp(fit_b));
 
     population_ranking
         .iter()
